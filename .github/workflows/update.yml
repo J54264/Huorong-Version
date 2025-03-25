@@ -2,8 +2,8 @@ name: Update README with Huorong Version Info
 
 on:
   schedule:
-    - cron: '0 0 * * *' # 每天 UTC 时间 00:00 运行，北京时间 08:00
-  workflow_dispatch: # 允许手动触发
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   update-readme:
@@ -29,12 +29,10 @@ jobs:
           import json
           from datetime import datetime
 
-          # 获取版本信息
           url = "https://www.huorong.cn/versionShow.php"
           response = requests.get(url)
           data = response.json()
 
-          # 提取关键信息
           version = data["version"]
           virus_version = data["virusVersion"]
           filesize = data["filesize"]
@@ -49,11 +47,9 @@ jobs:
           arm_full_name = data["armFullName"]
           arm_all_name = data["armAllName"]
 
-          # 获取当前时间（北京时间）
           current_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
-          # 构造 README 内容（表格格式）
-          readme_content = f"""## 火绒安全软件 5.0 版本信息和下载的地址 (自动更新)
+          readme_content = f"""## 火绒安全软件5.0版本信息 (自动更新)
 **最后更新时间**: {current_time}
 
 ### 基础信息
@@ -74,7 +70,6 @@ jobs:
 | 全功能安装包 | `{arm_all_name}` | {arm_filesize} | [下载]({arm_url_all})              |
 """
 
-          # 写入 README.md
           with open("README.md", "w") as f:
               f.write(readme_content)
           EOF
