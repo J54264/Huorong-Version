@@ -1,59 +1,66 @@
-name: Update Version Info
+name: Update Virus Definition README
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # 每天 UTC 时间 00:00 执行（北京时间 08:00）
-  workflow_dispatch:     # 允许手动触发
+    - cron: '0 0 * * *' # 每天UTC时间0点执行
+  workflow_dispatch:
 
 jobs:
   update-readme:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-          
-      - name: Fetch and Update README
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch version data
+        id: fetch_data
+        env:
+          VERSION_URL: https://www.huorong.cn/versionShow.php
         run: |
-          # 下载 JSON 数据
-          curl -o version.json "https://www.huorong.cn/versionShow.php?request_type=1"
-          
-          # 创建 Python 脚本生成表格
-          cat > generate_table.py << 'EOF'
-          import json
-          from datetime import datetime
+          VERSION_JSON=$(curl -s $VERSION_URL)
+          echo "version_data<<EOF" >> $GITHUB_ENV
+          echo "$VERSION_JSON" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
-          with open('version.json', 'r', encoding='utf-8') as f:
-              data = json.load(f)
+      - name: Generate markdown table
+        id: generate_table
+        run: |
+          # 解析JSON数据
+          VERSION=$(echo "$VERSION_JSON" | jq -r '.version')
+          VIRUS_VERSION=$(echo "$VERSION_JSON" | jq -r '.virusVersion')
+          CREATION_TIME=$(echo "$VERSION_JSON" | jq -r '.createtime')
+          
+          # 生成表格内容
+          TABLE="
+          | 架构类型 | 病毒库版本 | 程序版本 | 生成时间 | 类型 | 文件名 | 大小 | 下载链接 |
+          |----------|------------|----------|----------|------|--------|------|----------|
+          | x86/x64 | $VIRUS_VERSION | $VERSION | $CREATION_TIME | full | $(echo "$VERSION_JSON" | jq -r '.fullName') | $(echo "$VERSION_JSON" | jq -r '.filesize') | [下载]($(echo "$VERSION_JSON" | jq -r '.urlFull')) |
+          | x86/x64 | $VIRUS_VERSION | $VERSION | $CREATION_TIME | All | $(echo "$VERSION_JSON" | jq -r '.allName') | $(echo "$VERSION_JSON" | jq -r '.filesize') | [下载]($(echo "$VERSION_JSON" | jq -r '.urlAll')) |
+          | ARM64 | $VIRUS_VERSION | $VERSION | $CREATION_TIME | full | $(echo "$VERSION_JSON" | jq -r '.armFullName') | $(echo "$VERSION_JSON" | jq -r '.armFilesize') | [下载]($(echo "$VERSION_JSON" | jq -r '.armUrlFull')) |
+          | ARM64 | $VIRUS_VERSION | $VERSION | $CREATION_TIME | All | $(echo "$VERSION_JSON" | jq -r '.armAllName') | $(echo "$VERSION_JSON" | jq -r '.armFilesize') | [下载]($(echo "$VERSION_JSON" | jq -r '.armUrlAll')) |
+          "
+          
+          # 保存到环境变量
+          echo "markdown_table<<EOF" >> $GITHUB_ENV
+          echo "$TABLE" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
-          # 生成 Markdown 表格
-          table = "| 架构 | 病毒库版本 | 程序版本 | 生成时间 | 类型 | 文件名 | 大小 | 下载链接 |\n"
-          table += "|------|------------|----------|----------|------|--------|------|----------|\n"
+      - name: Update README.md
+        run: |
+          # 替换README中的版本表格
+          sed -i '/<!-- VERSION_TABLE_START -->/,/<!-- VERSION_TABLE_END -->/{
+            /<!-- VERSION_TABLE_START -->/!{
+              /<!-- VERSION_TABLE_END -->/!d
+            }
+          }' README.md
           
-          # x86/x64 full
-          table += f"| x86/x64 | {data['virusVersion']} | {data['version']} | {data['createtime']} | Full | {data['fullName']} | {data['filesize']} | [下载]({data['urlFull']}) |\n"
-          # x86/x64 all
-          table += f"| x86/x64 | {data['virusVersion']} | {data['version']} | {data['createtime']} | All | {data['allName']} | {data['filesize']} | [下载]({data['urlAll']}) |\n"
-          # ARM64 full
-          table += f"| ARM64 | {data['virusVersion']} | {data['version']} | {data['createtime']} | Full | {data['armFullName']} | {data['armFilesize']} | [下载]({data['armUrlFull']}) |\n"
-          # ARM64 all
-          table += f"| ARM64 | {data['virusVersion']} | {data['version']} | {data['createtime']} | All | {data['armAllName']} | {data['armFilesize']} | [下载]({data['armUrlAll']}) |\n"
+          # 插入新表格
+          echo "\n<!-- VERSION_TABLE_START -->\n${markdown_table}\n<!-- VERSION_TABLE_END -->" >> README.md
 
-          # 更新 README.md
-          with open('README.md', 'w', encoding='utf-8') as f:
-              f.write(f"# 版本信息\n\n更新时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} (UTC+8)\n\n{table}")
-          EOF
-          
-          # 运行 Python 脚本
-          python generate_table.py
-          
       - name: Commit changes
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
           git add README.md
-          git commit -m "Update version info" || echo "No changes to commit"
+          git commit -m "Update virus definition versions ($(date +'%Y-%m-%d %H:%M:%S'))" || exit 0
           git push
