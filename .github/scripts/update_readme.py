@@ -10,7 +10,7 @@ def fetch_data():
 
 def generate_table(data):
     table = """
-## 🔍 版本信息
+## 版本信息
 
 最后更新: {update_time}
 
