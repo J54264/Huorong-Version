@@ -1,86 +1,30 @@
-name: Update Virus Definition README
+name: Update Version Info
 
 on:
   schedule:
-    - cron: '0 0 * * *' # 每天UTC时间0点执行
-  workflow_dispatch:
+    - cron: '0 0 * * *'  # 每天UTC时间0点运行
+  workflow_dispatch:      # 允许手动触发
 
 jobs:
-  update-readme:
+  update:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Setup dependencies
-        run: |
-          sudo apt-get install jq -y
-          
-      - name: Fetch version data
-        id: fetch_data
-        env:
-          VERSION_URL: https://www.huorong.cn/versionShow.php
-        run: |
-          VERSION_JSON=$(curl -s $VERSION_URL)
-          echo "version_data=$VERSION_JSON" >> $GITHUB_ENV
-          
-          # 调试输出（参考[[10]]的调试建议）
-          echo "Raw JSON response:"
-          echo "$VERSION_JSON"
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-      - name: Parse and verify data
-        id: parse_data
-        run: |
-          # 使用jq进行健壮解析（参考[[7]]的错误处理）
-          VERSION=$(echo "$VERSION_JSON" | jq -r '.version // "N/A"')
-          VIRUS_VERSION=$(echo "$VERSION_JSON" | jq -r '.virusVersion // "N/A"')
-          CREATION_TIME=$(echo "$VERSION_JSON" | jq -r '.createtime[:10] // "N/A"') # 截取日期部分
-          
-          # 关键字段校验（参考[[5]]的校验机制）
-          if [ "$VERSION" = "N/A" ] || [ "$VIRUS_VERSION" = "N/A" ]; then
-            echo "Error: Missing critical version information" >&2
-            exit 1
-          fi
-          
-          # 保存关键变量
-          echo "version=$VERSION" >> $GITHUB_ENV
-          echo "virus_version=$VIRUS_VERSION" >> $GITHUB_ENV
-          echo "creation_time=$CREATION_TIME" >> $GITHUB_ENV
+    - name: Update README
+      run: |
+        python .github/scripts/update_readme.py
 
-      - name: Generate markdown table
-        id: generate_table
-        run: |
-          # 直接使用环境变量构建表格（参考[[3]]的变量传递）
-          TABLE="
-          | 架构类型 | 病毒库版本   | 程序版本    | 生成时间   | 类型   | 文件名                                      | 大小    | 下载链接                                                                 |
-          |----------|--------------|-------------|------------|--------|---------------------------------------------|---------|--------------------------------------------------------------------------|
-          | x86/x64  | $VIRUS_VERSION | $VERSION | $CREATION_TIME | 完整版 | $(jq -r '.fullName' <<< "$VERSION_JSON") | $(jq -r '.filesize' <<< "$VERSION_JSON") | [下载]($(jq -r '.urlFull' <<< "$VERSION_JSON")) |
-          | x86/x64  | $VIRUS_VERSION | $VERSION | $CREATION_TIME | 精简版 | $(jq -r '.allName' <<< "$VERSION_JSON")  | $(jq -r '.filesize' <<< "$VERSION_JSON") | [下载]($(jq -r '.urlAll' <<< "$VERSION_JSON")) |
-          | ARM64    | $VIRUS_VERSION | $VERSION | $CREATION_TIME | 完整版 | $(jq -r '.armFullName' <<< "$VERSION_JSON") | $(jq -r '.armFilesize' <<< "$VERSION_JSON") | [下载]($(jq -r '.armUrlFull' <<< "$VERSION_JSON")) |
-          | ARM64    | $VIRUS_VERSION | $VERSION | $CREATION_TIME | 精简版 | $(jq -r '.armAllName' <<< "$VERSION_JSON")  | $(jq -r '.armFilesize' <<< "$VERSION_JSON") | [下载]($(jq -r '.armUrlAll' <<< "$VERSION_JSON")) |
-          "
-          
-          # 保存表格到环境变量
-          echo "markdown_table<<EOF" >> $GITHUB_ENV
-          echo "$TABLE" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-      - name: Update README.md
-        run: |
-          # 使用sed进行智能替换（参考[[6]]的文本处理）
-          sed -i '/<!-- VERSION_TABLE_START -->/,/<!-- VERSION_TABLE_END -->/{
-            /<!-- VERSION_TABLE_START -->/!{
-              /<!-- VERSION_TABLE_END -->/!d
-            }
-          }' README.md
-          
-          # 插入新表格
-          echo "\n<!-- VERSION_TABLE_START -->\n${markdown_table}\n<!-- VERSION_TABLE_END -->" >> README.md
-
-      - name: Commit changes
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
-          git add README.md
-          git commit -m "Update virus definitions - ${CREATION_TIME} (${VERSION})" || exit 0
-          git push
+    - name: Commit changes
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git add README.md
+        git commit -m "Update version info" || echo "No changes to commit"
+        git push
