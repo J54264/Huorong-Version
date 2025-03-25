@@ -1,83 +1,59 @@
-name: Update README with Huorong Version Info
+name: Update Version Info
 
 on:
   schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+    - cron: '0 0 * * *'  # 每天 UTC 时间 00:00 执行（北京时间 08:00）
+  workflow_dispatch:     # 允许手动触发
 
 jobs:
   update-readme:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-
-      - name: Install dependencies
+          
+      - name: Fetch and Update README
         run: |
-          python -m pip install --upgrade pip
-          pip install requests
-
-      - name: Fetch version info and update README
-        run: |
-          python - <<EOF
-          import requests
+          # 下载 JSON 数据
+          curl -o version.json "https://www.huorong.cn/versionShow.php?request_type=1"
+          
+          # 创建 Python 脚本生成表格
+          cat > generate_table.py << 'EOF'
           import json
           from datetime import datetime
 
-          url = "https://www.huorong.cn/versionShow.php"
-          response = requests.get(url)
-          data = response.json()
+          with open('version.json', 'r', encoding='utf-8') as f:
+              data = json.load(f)
 
-          version = data["version"]
-          virus_version = data["virusVersion"]
-          filesize = data["filesize"]
-          url_full = data["urlFull"]
-          url_all = data["urlAll"]
-          arm_filesize = data["armFilesize"]
-          arm_url_full = data["armUrlFull"]
-          arm_url_all = data["armUrlAll"]
-          createtime = data["createtime"]
-          full_name = data["fullName"]
-          all_name = data["allName"]
-          arm_full_name = data["armFullName"]
-          arm_all_name = data["armAllName"]
+          # 生成 Markdown 表格
+          table = "| 架构 | 病毒库版本 | 程序版本 | 生成时间 | 类型 | 文件名 | 大小 | 下载链接 |\n"
+          table += "|------|------------|----------|----------|------|--------|------|----------|\n"
+          
+          # x86/x64 full
+          table += f"| x86/x64 | {data['virusVersion']} | {data['version']} | {data['createtime']} | Full | {data['fullName']} | {data['filesize']} | [下载]({data['urlFull']}) |\n"
+          # x86/x64 all
+          table += f"| x86/x64 | {data['virusVersion']} | {data['version']} | {data['createtime']} | All | {data['allName']} | {data['filesize']} | [下载]({data['urlAll']}) |\n"
+          # ARM64 full
+          table += f"| ARM64 | {data['virusVersion']} | {data['version']} | {data['createtime']} | Full | {data['armFullName']} | {data['armFilesize']} | [下载]({data['armUrlFull']}) |\n"
+          # ARM64 all
+          table += f"| ARM64 | {data['virusVersion']} | {data['version']} | {data['createtime']} | All | {data['armAllName']} | {data['armFilesize']} | [下载]({data['armUrlAll']}) |\n"
 
-          current_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-
-          readme_content = f"""## 火绒安全软件5.0版本信息 (自动更新)
-**最后更新时间**: {current_time}
-
-### 基础信息
-- **病毒库版本**: `{virus_version}`
-- **程序版本**: `{version}`
-- **生成时间**: `{createtime}`
-
-### 常规版本 (x86/x64)
-| 类型       | 文件名            | 大小    | 下载链接                                   |
-|------------|-------------------|---------|--------------------------------------------|
-| 完整安装包 | `{full_name}`     | {filesize} | [下载]({url_full})                     |
-| 全功能安装包 | `{all_name}`     | {filesize} | [下载]({url_all})                      |
-
-### ARM64 版本
-| 类型       | 文件名            | 大小    | 下载链接                                   |
-|------------|-------------------|---------|--------------------------------------------|
-| 完整安装包 | `{arm_full_name}` | {arm_filesize} | [下载]({arm_url_full})             |
-| 全功能安装包 | `{arm_all_name}` | {arm_filesize} | [下载]({arm_url_all})              |
-"""
-
-          with open("README.md", "w") as f:
-              f.write(readme_content)
+          # 更新 README.md
+          with open('README.md', 'w', encoding='utf-8') as f:
+              f.write(f"# 版本信息\n\n更新时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} (UTC+8)\n\n{table}")
           EOF
-
-      - name: Commit and push changes
+          
+          # 运行 Python 脚本
+          python generate_table.py
+          
+      - name: Commit changes
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add README.md
-          git commit -m "Update README with latest Huorong version info"
+          git commit -m "Update version info" || echo "No changes to commit"
           git push
