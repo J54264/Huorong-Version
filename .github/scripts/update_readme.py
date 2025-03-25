@@ -16,7 +16,7 @@ def generate_table(data):
 
 | 架构    | 类型  | 病毒库版本 | 程序版本 | 生成时间 | 文件名 | 大小 | 下载链接 |
 |---------|-------|------------|----------|----------|--------|------|----------|
-"""。format(update_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+""".format(update_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     # x86/x64 架构
     table += "| x64     | Full | {virus} | {version} | {time} | {full_name} | {size} | [下载]({full_url}) |\n".format(
