@@ -13,7 +13,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        token: ${{ secrets.GITHUB_TOKEN }} # 使用默认权限 [[9]]
+        token: ${{ secrets.GITHUB_TOKEN }} # 使用默认权限 [[7]]
+
+    - name: Install jq
+      run: sudo apt-get install jq -y # 安装JSON解析工具 [[3]]
 
     - name: Get JSON data
       id: get_data
@@ -24,28 +27,32 @@ jobs:
     - name: Generate Markdown content
       id: generate_md
       run: |
-        # 解析JSON并生成表格 [[4]]
+        # 解析JSON数据 [[4]]
         VERSION=$(jq -r '.version' <<< "$json_data")
         VIRUS_VERSION=$(jq -r '.virusVersion' <<< "$json_data")
         FILESIZE=$(jq -r '.filesize' <<< "$json_data")
         DOWNLOAD_URL=$(jq -r '.urlFull' <<< "$json_data")
         ARM_DOWNLOAD=$(jq -r '.armUrlFull' <<< "$json_data")
         
-        # 创建Markdown表格
-        CONTENT="| 参数 | 值 |\n|---|---|\n"
-        CONTENT+="| 版本号 | $VERSION |\n"
-        CONTENT+="| 病毒库版本 | $VIRUS_VERSION |\n"
-        CONTENT+="| 文件大小 | $FILESIZE |\n"
-        CONTENT+="| 下载地址 | [点击下载]($DOWNLOAD_URL) |\n"
-        CONTENT+="| ARM64下载 | [点击下载]($ARM_DOWNLOAD) |"
+        # 生成规范表格 [[1]]
+        CONTENT="| 参数          | 值                                                                 |\n"
+        CONTENT+="|---------------|-------------------------------------------------------------------|\n"
+        CONTENT+="| 版本号        | **$VERSION**                                                      |\n"
+        CONTENT+="| 病毒库版本    | $VIRUS_VERSION                                                    |\n"
+        CONTENT+="| 文件大小      | $FILESIZE                                                         |\n"
+        CONTENT+="| 下载地址      | [点击下载]($DOWNLOAD_URL)                                         |\n"
+        CONTENT+="| ARM64下载     | [点击下载]($ARM_DOWNLOAD)                                         |\n"
+        CONTENT+="\n> 火绒官网已停止5.0版本下载"
         
         echo "markdown_content=$CONTENT" >> $GITHUB_ENV
 
     - name: Update README.md
       run: |
-        # 替换README中的占位符 [[6]]
-        sed -i '/<!-- AUTO-UPDATE -->/r /dev/stdin' README.md <<< "$markdown_content"
-        # 或者使用更精确的正则匹配替换
+        # 使用正则表达式精确替换内容 [[2]]
+        sed -i '/<!-- AUTO-UPDATE START -->/,/<!-- AUTO-UPDATE END -->/c\
+        <!-- AUTO-UPDATE START -->\
+        \n${markdown_content}\
+        \n<!-- AUTO-UPDATE END -->' README.md
 
     - name: Commit changes
       run: |
