@@ -1,4 +1,2 @@
 # 火绒5.0版本自动获取
-<!-- HUORONG_VERSION_START -->
-
-<!-- HUORONG_VERSION_END -->
+<!-- AUTO-UPDATE -->
