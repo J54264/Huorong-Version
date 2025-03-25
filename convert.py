@@ -11,7 +11,7 @@ def fetch_data():
         raise Exception("Failed to fetch data")
 
 def generate_markdown(data):
-    markdown = f"""## 火绒安全软件版本信息 (自动更新)
+    markdown = f"""## 火绒安全软件5.0版本信息 (自动更新)
 **最后更新时间**: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
 ### 基础信息
@@ -36,5 +36,5 @@ def generate_markdown(data):
 if __name__ == "__main__":
     data = fetch_data()
     md_content = generate_markdown(data)
-    with open("VERSION.md", "w", encoding="utf-8") as f:
+    with open("README.md", "w", encoding="utf-8") as f:
         f.write(md_content)
