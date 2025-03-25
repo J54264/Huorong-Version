@@ -1,63 +1,88 @@
-name: Auto Update README
+name: Update README with Huorong Version Info
 
 on:
   schedule:
-    - cron: '0 1 * * *' # 每天凌晨1点执行 [[8]]
-  workflow_dispatch: # 手动触发
+    - cron: '0 0 * * *' # 每天 UTC 时间 00:00 运行，北京时间 08:00
+  workflow_dispatch: # 允许手动触发
 
 jobs:
   update-readme:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }} # 使用默认权限 [[7]]
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Install jq
-      run: sudo apt-get install jq -y # 安装JSON解析工具 [[3]]
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
 
-    - name: Get JSON data
-      id: get_data
-      run: |
-        curl -s https://www.huorong.cn/versionShow.php -o version.json
-        echo "json_data=$(cat version.json)" >> $GITHUB_ENV
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
 
-    - name: Generate Markdown content
-      id: generate_md
-      run: |
-        # 解析JSON数据 [[4]]
-        VERSION=$(jq -r '.version' <<< "$json_data")
-        VIRUS_VERSION=$(jq -r '.virusVersion' <<< "$json_data")
-        FILESIZE=$(jq -r '.filesize' <<< "$json_data")
-        DOWNLOAD_URL=$(jq -r '.urlFull' <<< "$json_data")
-        ARM_DOWNLOAD=$(jq -r '.armUrlFull' <<< "$json_data")
-        
-        # 生成规范表格 [[1]]
-        CONTENT="| 参数          | 值                                                                 |\n"
-        CONTENT+="|---------------|-------------------------------------------------------------------|\n"
-        CONTENT+="| 版本号        | **$VERSION**                                                      |\n"
-        CONTENT+="| 病毒库版本    | $VIRUS_VERSION                                                    |\n"
-        CONTENT+="| 文件大小      | $FILESIZE                                                         |\n"
-        CONTENT+="| 下载地址      | [点击下载]($DOWNLOAD_URL)                                         |\n"
-        CONTENT+="| ARM64下载     | [点击下载]($ARM_DOWNLOAD)                                         |\n"
-        CONTENT+="\n> 火绒官网已停止5.0版本下载"
-        
-        echo "markdown_content=$CONTENT" >> $GITHUB_ENV
+      - name: Fetch version info and update README
+        run: |
+          python - <<EOF
+          import requests
+          import json
+          from datetime import datetime
 
-    - name: Update README.md
-      run: |
-        # 使用双引号保证变量展开，使用实际换行符 [[3]][[7]]
-        sed -i "/<!-- AUTO-UPDATE START -->/,/<!-- AUTO-UPDATE END -->/c\\
-        <!-- AUTO-UPDATE START -->\\
-        ${markdown_content}\\
-        <!-- AUTO-UPDATE END -->" README.md
+          # 获取版本信息
+          url = "https://www.huorong.cn/versionShow.php"
+          response = requests.get(url)
+          data = response.json()
 
-    - name: 提交更改
-      run: |
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
-        git add README.md
-        git commit -m "Update version info (Auto-generated on $(date +%Y-%m-%d))" || echo "No changes to commit"
-        git push origin main
+          # 提取关键信息
+          version = data["version"]
+          virus_version = data["virusVersion"]
+          filesize = data["filesize"]
+          url_full = data["urlFull"]
+          url_all = data["urlAll"]
+          arm_filesize = data["armFilesize"]
+          arm_url_full = data["armUrlFull"]
+          arm_url_all = data["armUrlAll"]
+          createtime = data["createtime"]
+          full_name = data["fullName"]
+          all_name = data["allName"]
+          arm_full_name = data["armFullName"]
+          arm_all_name = data["armAllName"]
+
+          # 获取当前时间（北京时间）
+          current_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+          # 构造 README 内容（表格格式）
+          readme_content = f"""## 火绒安全软件5.0版本信息和下载的地址 (自动更新)
+**最后更新时间**: {current_time}
+
+### 基础信息
+- **病毒库版本**: `{virus_version}`
+- **程序版本**: `{version}`
+- **生成时间**: `{createtime}`
+
+### 常规版本 (x86/x64)
+| 类型       | 文件名            | 大小    | 下载链接                                   |
+|------------|-------------------|---------|--------------------------------------------|
+| 完整安装包 | `{full_name}`     | {filesize} | [下载]({url_full})                     |
+| 全功能安装包 | `{all_name}`     | {filesize} | [下载]({url_all})                      |
+
+### ARM64 版本
+| 类型       | 文件名            | 大小    | 下载链接                                   |
+|------------|-------------------|---------|--------------------------------------------|
+| 完整安装包 | `{arm_full_name}` | {arm_filesize} | [下载]({arm_url_full})             |
+| 全功能安装包 | `{arm_all_name}` | {arm_filesize} | [下载]({arm_url_all})              |
+"""
+
+          # 写入 README.md
+          with open("README.md", "w") as f:
+              f.write(readme_content)
+          EOF
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "Update README with latest Huorong version info"
+          git push
