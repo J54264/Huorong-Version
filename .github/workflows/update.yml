@@ -53,7 +53,7 @@ jobs:
           current_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
           # 构造 README 内容（表格格式）
-          readme_content = f"""## 火绒安全软件5.0版本信息和下载的地址 (自动更新)
+          readme_content = f"""## 火绒安全软件 5.0 版本信息和下载的地址 (自动更新)
 **最后更新时间**: {current_time}
 
 ### 基础信息
