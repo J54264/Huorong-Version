@@ -1,37 +1,56 @@
 name: Auto Update README
+
 on:
   schedule:
-    - cron: "0 */6 * * *"  # 每6小时运行一次
-  workflow_dispatch:        # 允许手动触发
+    - cron: '0 1 * * *' # 每天凌晨1点执行 [[8]]
+  workflow_dispatch: # 手动触发
 
 jobs:
-  update:
+  update-readme:
     runs-on: ubuntu-latest
+
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }} # 使用默认权限 [[9]]
 
-      - name: 设置 Python 环境
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
+    - name: Get JSON data
+      id: get_data
+      run: |
+        curl -s https://www.huorong.cn/versionShow.php -o version.json
+        echo "json_data=$(cat version.json)" >> $GITHUB_ENV
 
-      - name: 安装依赖
-        run: pip install requests
+    - name: Generate Markdown content
+      id: generate_md
+      run: |
+        # 解析JSON并生成表格 [[4]]
+        VERSION=$(jq -r '.version' <<< "$json_data")
+        VIRUS_VERSION=$(jq -r '.virusVersion' <<< "$json_data")
+        FILESIZE=$(jq -r '.filesize' <<< "$json_data")
+        DOWNLOAD_URL=$(jq -r '.urlFull' <<< "$json_data")
+        ARM_DOWNLOAD=$(jq -r '.armUrlFull' <<< "$json_data")
+        
+        # 创建Markdown表格
+        CONTENT="| 参数 | 值 |\n|---|---|\n"
+        CONTENT+="| 版本号 | $VERSION |\n"
+        CONTENT+="| 病毒库版本 | $VIRUS_VERSION |\n"
+        CONTENT+="| 文件大小 | $FILESIZE |\n"
+        CONTENT+="| 下载地址 | [点击下载]($DOWNLOAD_URL) |\n"
+        CONTENT+="| ARM64下载 | [点击下载]($ARM_DOWNLOAD) |"
+        
+        echo "markdown_content=$CONTENT" >> $GITHUB_ENV
 
-      - name: 运行更新脚本
-        run: |
-          # 检查文件是否存在
-          if [ ! -f "convert_readme.py" ]; then
-            echo "错误：convert_readme.py 不存在！当前目录内容："
-            ls -al
-            exit 1
-          fi
-          python convert_readme.py
+    - name: Update README.md
+      run: |
+        # 替换README中的占位符 [[6]]
+        sed -i '/<!-- AUTO-UPDATE -->/r /dev/stdin' README.md <<< "$markdown_content"
+        # 或者使用更精确的正则匹配替换
 
-      - name: 提交更改
-        run: |
-          git config --global user.name "自动更新机器人"
-          git config --global user.email "auto-updater@noreply.github.com"
-          git add README.md
-          git diff --quiet || (git commit -m "📌 自动更新火绒版本信息" && git push)
+    - name: Commit changes
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git add README.md
+        git commit -m "Update version info (Auto-generated on $(date +%Y-%m-%d))" || echo "No changes to commit"
+        git push origin main
