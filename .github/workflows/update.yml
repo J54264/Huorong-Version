@@ -20,9 +20,9 @@ jobs:
         run: pip install requests
 
       - name: Update README
-        run: python convert_readme.py
+        run: python convert.py
 
-      - name: Commit changes
+      - name: 提交更改
         run: |
           git config --global user.name "Huorong Updater"
           git config --global user.email "updater@huorong.cn"
