@@ -1,4 +1,6 @@
-## 火绒5.0版本获取  每天自动更新 
+# 火绒安全软件5.0版本下载 
+
+自火绒6.0版本发布后，**官网已不再提供5.0安装包下载**。以下所有安装包均来自火绒官方服务器，自动更新
 
 <!-- TABLE_START -->
 
@@ -14,3 +16,5 @@
 | ARM64   | All  | 2025.03.24.1 | 5.0.76.13 | 2025-03-24 19:30:09 | sysdiag-arm64-all-5.0.76.13-2025.03.24.1.exe | 27.81M | [下载](https://down-tencent.huorong.cn/sysdiag-arm64-all-5.0.76.13-2025.03.24.1.exe) |
 
 <!-- TABLE_END -->
+
+[![自动更新状态](https://github.com/J54264/Huorong-Version/actions/workflows/update.yml/badge.svg)](https://github.com/J54264/Huorong-Version/actions)
