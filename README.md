@@ -6,14 +6,14 @@
 
 ## 版本信息
 
-最后更新: 2025-06-02 01:55:02
+最后更新: 2025-06-03 01:51:47
 
 | 架构    | 类型   | 病毒库版本 | 程序版本  | 生成时间 | 文件名 | 大小 | 下载链接    |
 |---------|-------|------------|----------|----------|--------|------|----------|
-| x64     | Full | 2025.06.01.1 | 5.0.77.2 | 2025-06-01 16:52:16 | sysdiag-full-5.0.77.2-2025.06.01.1.exe | 27.79M | [下载](https://down-tencent.huorong.cn/sysdiag-full-5.0.77.2-2025.06.01.1.exe) |
-| x64     | All  | 2025.06.01.1 | 5.0.77.2 | 2025-06-01 16:52:16 | sysdiag-all-5.0.77.2-2025.06.01.1.exe | 27.79M | [下载](https://down-tencent.huorong.cn/sysdiag-all-5.0.77.2-2025.06.01.1.exe) |
-| ARM64   | Full | 2025.06.01.1 | 5.0.77.2 | 2025-06-01 16:52:16 | sysdiag-arm64-full-5.0.77.2-2025.06.01.1.exe | 27.51M | [下载](https://down-tencent.huorong.cn/sysdiag-arm64-full-5.0.77.2-2025.06.01.1.exe) |
-| ARM64   | All  | 2025.06.01.1 | 5.0.77.2 | 2025-06-01 16:52:16 | sysdiag-arm64-all-5.0.77.2-2025.06.01.1.exe | 27.51M | [下载](https://down-tencent.huorong.cn/sysdiag-arm64-all-5.0.77.2-2025.06.01.1.exe) |
+| x64     | Full | 2025.06.02.1 | 5.0.77.2 | 2025-06-02 16:07:19 | sysdiag-full-5.0.77.2-2025.06.02.1.exe | 27.79M | [下载](https://down-tencent.huorong.cn/sysdiag-full-5.0.77.2-2025.06.02.1.exe) |
+| x64     | All  | 2025.06.02.1 | 5.0.77.2 | 2025-06-02 16:07:19 | sysdiag-all-5.0.77.2-2025.06.02.1.exe | 27.79M | [下载](https://down-tencent.huorong.cn/sysdiag-all-5.0.77.2-2025.06.02.1.exe) |
+| ARM64   | Full | 2025.06.02.1 | 5.0.77.2 | 2025-06-02 16:07:19 | sysdiag-arm64-full-5.0.77.2-2025.06.02.1.exe | 27.51M | [下载](https://down-tencent.huorong.cn/sysdiag-arm64-full-5.0.77.2-2025.06.02.1.exe) |
+| ARM64   | All  | 2025.06.02.1 | 5.0.77.2 | 2025-06-02 16:07:19 | sysdiag-arm64-all-5.0.77.2-2025.06.02.1.exe | 27.51M | [下载](https://down-tencent.huorong.cn/sysdiag-arm64-all-5.0.77.2-2025.06.02.1.exe) |
 
 <!-- TABLE_END -->
 
